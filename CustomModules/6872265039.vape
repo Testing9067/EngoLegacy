@@ -1,0 +1,319 @@
+repeat wait() until game:IsLoaded()
+
+local VERSION = "ENGO-1.07"
+
+local GuiLibrary = shared.GuiLibrary
+local players = game:GetService("Players")
+local textservice = game:GetService("TextService")
+local lplr = players.LocalPlayer
+local workspace = game:GetService("Workspace")
+local lighting = game:GetService("Lighting")
+local cam = workspace.CurrentCamera
+local targetinfo = shared.VapeTargetInfo
+local uis = game:GetService("UserInputService")
+local mouse = lplr:GetMouse()
+local robloxfriends = {}
+local bedwars = {}
+local getfunctions
+local origC0 = nil
+local requestfunc = syn and syn.request or http and http.request or http_request or fluxus and fluxus.request or getgenv().request or request
+local getasset = getsynasset or getcustomasset
+
+local checkpublicreponum = 0
+local checkpublicrepo
+checkpublicrepo = function(id)
+	local suc, req = pcall(function() return requestfunc({
+		Url = "https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/main/CustomModules/"..id..".vape",
+		Method = "GET"
+	}) end)
+	if not suc then
+		checkpublicreponum = checkpublicreponum + 1
+		spawn(function()
+			local textlabel = Instance.new("TextLabel")
+			textlabel.Size = UDim2.new(1, 0, 0, 36)
+			textlabel.Text = "Loading CustomModule Failed!, Attempts : "..checkpublicreponum
+			textlabel.BackgroundTransparency = 1
+			textlabel.TextStrokeTransparency = 0
+			textlabel.TextSize = 30
+			textlabel.Font = Enum.Font.SourceSans
+			textlabel.TextColor3 = Color3.new(1, 1, 1)
+			textlabel.Position = UDim2.new(0, 0, 0, -36)
+			textlabel.Parent = GuiLibrary["MainGui"]
+			wait(2)
+			textlabel:Remove()
+		end)
+		wait(2)
+		return checkpublicrepo(id)
+	end
+	if req.StatusCode == 200 then
+		return req.Body
+	end
+	return nil
+end
+
+local publicrepo = checkpublicrepo(game.PlaceId)
+if publicrepo then
+	loadstring(publicrepo)()
+end
+
+--local vertextsize = game:GetService("TextService"):GetTextSize(VERSION, 25, Enum.Font.SourceSans, Vector2.new(99999, 99999))
+--GuiLibrary["MainGui"].ClickGui.Version.Text = VERSION
+--GuiLibrary["MainGui"].ClickGui.Version.Position = UDim2.new(1, -(vertextsize.X) - 20, 1, -25)
+--GuiLibrary["MainGui"].ClickGui.Version.Version.Text = VERSION
+
+
+local RenderStepTable = {}
+local function BindToRenderStep(name, num, func)
+	if RenderStepTable[name] == nil then
+		RenderStepTable[name] = game:GetService("RunService").RenderStepped:connect(func)
+	end
+end
+local function UnbindFromRenderStep(name)
+	if RenderStepTable[name] then
+		RenderStepTable[name]:Disconnect()
+		RenderStepTable[name] = nil
+	end
+end
+
+local function runcode(func)
+	func()
+end
+
+local function getcustomassetfunc(path)
+	if not isfile(path) then
+		spawn(function()
+			local textlabel = Instance.new("TextLabel")
+			textlabel.Size = UDim2.new(1, 0, 0, 36)
+			textlabel.Text = "Downloading "..path
+			textlabel.BackgroundTransparency = 1
+			textlabel.TextStrokeTransparency = 0
+			textlabel.TextSize = 30
+			textlabel.Font = Enum.Font.SourceSans
+			textlabel.TextColor3 = Color3.new(1, 1, 1)
+			textlabel.Position = UDim2.new(0, 0, 0, -36)
+			textlabel.Parent = GuiLibrary["MainGui"]
+			repeat wait() until isfile(path)
+			textlabel:Remove()
+		end)
+		local req = requestfunc({
+			Url = "https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/main/"..path:gsub("vape/assets", "assets"),
+			Method = "GET"
+		})
+		writefile(path, req.Body)
+	end
+	return getasset(path) 
+end
+
+local function isAlive(plr)
+	if plr then
+		return plr and plr.Character and plr.Character.Parent ~= nil and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Head") and plr.Character:FindFirstChild("Humanoid")
+	end
+	return lplr and lplr.Character and lplr.Character.Parent ~= nil and lplr.Character:FindFirstChild("HumanoidRootPart") and lplr.Character:FindFirstChild("Head") and lplr.Character:FindFirstChild("Humanoid")
+end
+
+local function createwarning(title, text, delay)
+	pcall(function()
+		local frame = GuiLibrary["CreateNotification"](title, text, delay, "assets/WarningNotification.png")
+		frame.Frame.BackgroundColor3 = Color3.fromRGB(236, 129, 44)
+		frame.Frame.Frame.BackgroundColor3 = Color3.fromRGB(236, 129, 44)
+	end)
+end
+
+
+local function createnotification(title, text, delay)
+	pcall(function()
+		local frame = GuiLibrary["CreateNotification"](title, text, delay, "assets/InfoNotification.png")
+		frame.Frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		frame.Frame.Frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	end)
+end
+createnotification("EngoVape","EngoVape has loaded.", 1.5)
+
+local CinematicGui = {["Enabled"] = false}
+function hideui(bool2)
+	local bool = not bool2
+	if (GuiLibrary["MainGui"]["ScaledGui"]["ClickGui"] and GuiLibrary["MainGui"]["ScaledGui"]["ClickGui"].Visible or GuiLibrary["MainGui"]["ClickGui"] and GuiLibrary["MainGui"]["ClickGui"].Visible) then
+		game:GetService("UserInputService").MouseIconEnabled = true
+	else
+		game:GetService("UserInputService").MouseIconEnabled = bool
+	end
+
+	for i,v in pairs(game.CoreGui:GetChildren()) do
+		if v.Name == "ThemeProvider" then
+			v.Enabled = bool
+		end
+	end
+
+	for i,v in pairs(game.Players.LocalPlayer.PlayerGui:GetChildren()) do
+		if v.Name == "1" or v.Name == "Chat" and v:IsA("ScreenGui") then
+			v.Enabled = bool
+		end
+	end
+
+	for i,v in pairs(game.Players.LocalPlayer.PlayerGui:GetChildren()) do
+		if v:FindFirstChildOfClass("ImageButton") then 
+			v.Enabled = true
+		end
+	end
+end
+
+Cinematic = GuiLibrary["ObjectsThatCanBeSaved"]["RenderWindow"]["Api"].CreateOptionsButton({
+	["Name"] = "Cinematic", 
+	["Function"] = function(callback)
+		if callback then
+			BindToRenderStep("Cinematic", 1, function()
+				hideui(true)
+			end)
+		else
+			UnbindFromRenderStep("Cinematic")
+			hideui(false)
+		end
+	end,
+	["HoverText"] = "Hides all uis that arent vape.\nUse for videos and screenshots."
+})
+
+local shadows = {["Enabled"] = false}
+local softshadows = {["Enabled"] = false}
+local technology = Enum.Technology.ShadowMap
+
+function hiddenprop()
+	local suc, err = pcall(function()
+		gethiddenproperty(game.Lighting, "Technology")
+	end)
+
+	if suc then
+		return true
+	else
+		return false
+	end
+end
+
+getgenv().oldLightingProp = {
+	Ambient = lighting.Ambient,
+	Brightness = lighting.Brightness,
+	ColorShift_Bottom = lighting.ColorShift_Bottom,
+	ColorShift_Top = lighting.ColorShift_Top,
+	GlobalShadows = lighting.GlobalShadows,
+	OutdoorAmbient = lighting.OutdoorAmbient,
+	ShadowSoftness = lighting.ShadowSoftness,
+	EnvironmentDiffuseScale = lighting.EnvironmentDiffuseScale,
+	EnvironmentSpecularScale = lighting.EnvironmentSpecularScale,
+	ClockTime = lighting.ClockTime,
+	GeographicLatitude = lighting.GeographicLatitude,
+}
+getgenv().oldLighting = {}
+for i,v in pairs(lighting:GetChildren()) do 
+	if not v:IsA("BlurEffect") and v.ClassName:lower():find("effect") then 
+		getgenv().oldLighting[v.Name] = v
+	end 
+	if hiddenprop() then
+		getgenv().oldLighting["Technology"] = gethiddenproperty(lighting, "Technology")
+	end
+end
+
+function revertshaders()
+	for i,v in pairs(getgenv().oldLightingProp) do
+		lighting[i] = v
+	end
+	for i,v in pairs(lighting:GetChildren()) do 
+		if not v:IsA("BlurEffect") and v.ClassName:lower():find("effect") then 
+			pcall(function()
+				v.Parent = nil
+			end)
+		end 
+	end
+	for i,v in pairs(oldLighting) do 
+		pcall(function()
+			v.Parent = lighting
+		end)
+	end
+	for i,v in pairs(getgenv().shaders) do 
+		pcall(function()
+			v.Parent = nil
+		end)
+	end
+	if hiddenprop() then
+		sethiddenproperty(lighting, "Technology", getgenv().oldLighting["Technology"])
+	end
+end
+
+function doshaders()
+	getgenv().shaders = {}
+	for i,v in pairs(lighting:GetChildren()) do 
+		if not v:IsA("BlurEffect") and v.ClassName:lower():find("effect") then 
+			v.Parent = nil
+		end 
+	end
+		local Bloom = lighting:FindFirstChild("EngoShaders_Bloom") or Instance.new("BloomEffect", lighting)
+		local ColorCorrection = lighting:FindFirstChild("EngoShaders_ColorCorrection") or Instance.new("ColorCorrectionEffect", lighting)
+		getgenv().shaders["Bloom"] = Bloom 
+		getgenv().shaders["ColorCorrection"] = ColorCorrection
+		lighting.Ambient = Color3.fromRGB(230, 164, 50)
+		lighting.Brightness = 7
+		lighting.ColorShift_Bottom = Color3.fromRGB(0,0,0)
+		lighting.ColorShift_Top = Color3.fromRGB(217, 140, 32)
+		lighting.GlobalShadows = shadows["Enabled"]
+		lighting.OutdoorAmbient = Color3.fromRGB(102, 105, 50)
+		lighting.ShadowSoftness =  softshadows["Enabled"] and 1 or 0
+		lighting.EnvironmentDiffuseScale = 0.05
+		lighting.EnvironmentSpecularScale = 0.05
+		if hiddenprop() then
+			sethiddenproperty(lighting, "Technology", technology)
+		end
+		lighting.ClockTime = 9
+		lighting.GeographicLatitude = 80
+		Bloom.Name = "EngoShaders_Bloom"
+		Bloom.Intensity = 0.1 
+		Bloom.Size = 46
+		Bloom.Threshold = 0.8
+		ColorCorrection.Name = "EngoShaders_ColorCorrection"
+		ColorCorrection.TintColor = Color3.fromRGB(244, 255, 210)
+		ColorCorrection.Contrast = 0.2
+		ColorCorrection.Brightness = -0.05
+	end
+
+shaders = GuiLibrary["ObjectsThatCanBeSaved"]["RenderWindow"]["Api"].CreateOptionsButton({
+	["Name"] = "Shaders",
+	["Function"] = function(callback) 
+		if callback then
+			doshaders()
+		else
+			revertshaders()
+		end
+	end,
+	["HoverText"] = "Makes the game look so much nicer",
+})
+
+shadowst = shaders.CreateToggle({
+	["Name"] = "Shadows",
+	["Function"] = function(callback)
+		if shaders["Enabled"] then
+			lighting.GlobalShadows = callback
+		end
+		shadows["Enabled"] = callback
+	end,
+	["HoverText"] = "Enable shadows",
+})
+
+softshadowst = shaders.CreateToggle({
+	["Name"] = "SoftShadows",
+	["Function"] = function(callback) 
+		if shaders["Enabled"] then
+			lighting.ShadowSoftness = callback and 1 or 0
+		end
+		softshadows["Enabled"] = callback
+	end,
+	["HoverText"] = "Softer Shadows",
+})
+if hiddenprop() then
+	technologyt = shaders.CreateDropdown({
+		["Name"] = "Tech",
+		["List"] = {"ShadowMap", "Future", "Voxel", "Compatibility"},
+		["Function"] = function(arg)
+			technology = arg == "ShadowMap" and Enum.Technology.ShadowMap or arg == "Future" and Enum.Technology.Future or arg == "Voxel" and Enum.Technology.Voxel or arg == "Compatibility" and Enum.Technology.Compatibility or Enum.Technology.ShadowMap
+			if shaders["Enabled"] then
+				sethiddenproperty(lighting, "Technology", technology)
+			end
+		end,
+	})
+end
