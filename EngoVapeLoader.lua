@@ -27,7 +27,7 @@ checkpublicrepo = function(id)
         return readfile("vape/CustomModules/"..id..".vape")
     end
 	local suc, req = pcall(function() return requestfunc({
-		Url = "https://raw.githubusercontent.com/joeengo/VapeV4ForRoblox/main/CustomModules/"..id..".vape",
+		Url = "https://raw.githubusercontent.com/Testing9067/EngoLegacy/main/CustomModules/"..id..".vape",
 		Method = "GET"
 	}) end)
 	if req.StatusCode == 200 then
@@ -40,7 +40,7 @@ for _, placeid in pairs(getAllPlaceIds()) do
     local publicrepo = checkpublicrepo(placeid)
     if publicrepo then
         if not isfile("vape/CustomModules/"..tostring(placeid)..".vape") then
-            writefile("vape/CustomModules/"..tostring(placeid)..".vape", "loadstring(game:HttpGet('https://raw.githubusercontent.com/joeengo/VapeV4ForRoblox/main/CustomModules/"..placeid..".vape'))()")
+            writefile("vape/CustomModules/"..tostring(placeid)..".vape", "loadstring(game:HttpGet('https://raw.githubusercontent.com/Testing9067/EngoLegacy/main/CustomModules/"..placeid..".vape'))()")
         end
     end
 end
